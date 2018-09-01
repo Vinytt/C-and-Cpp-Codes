@@ -1,0 +1,236 @@
+#include <stdio.h>
+#define EPS 0.000001
+double cosseno (double theta, double epsilon);
+int localiza (double xi, double yi, double div, double xj, double yj, double djv, double xk, double yk, double dkv, double *pxv, double *pyv);
+double raiz (double x, double epsilon);
+double velocidade(double x0, double y0, double x1, double y1, double deltaT);
+int intercepta(double x0, double y0, double x1, double y1, double *x, double *y);
+
+int main()
+{
+    int casos, id, i, v, ant;
+    /* id indentifica a antena, i eh o contador de casos, v eh o numero do veiculo e ant eh o contador de antenas*/
+    double xi, xj, xk, yi, yj, yk, hi, hj, hk, thetai, thetaj, thetak, deltaT, xv, yv, x1, y1, x2, y2, div, djv, dkv, n, x, y, sec;
+    /* xi, xj, xk, yi, yj, e yk sao as coordenadas do veiculo em relacao a antenas especificas*/
+    /* hi, hj, hk sao as distancias do veiculo em relacao a antenas especificas*/
+    /* thetai, thetaj, thetak sao os angulos das distancias com a horizontal em relacao a antenas especificas*/
+    /* deltaT eh o tempo decorrido durante uma leva de coordenadas e outra, no mesmo veiculo*/
+    /* xv e yv sao as coordenadas "absolutas" do veiculo em um dado momento*/
+    /* n recebe o valor da funcao localiza*/
+    /*x e y sao as coordenadas onde a trajetoria do carro intercepta o QG*/
+    /* sec guarda o valor da funcao intercepta */
+
+    FILE * arq;
+    arq = fopen("entrada.txt", "r");
+
+    if (!arq){
+        printf("Nao foi possivel abrir o arquivo\n");
+    }
+
+    fscanf(arq, "%d", &casos);
+    printf("Programa-demo para o Sistema de Monitoramento de Politeranos\n");
+    printf("Numero de casos a serem analisados: %d\n\n", casos);
+    for (i=1; i <= casos; i++){
+        fscanf(arq, "%d", &v);
+        printf("IDENTIFICACAO: veiculo %d\n\n", v);
+        /*primeira antena*/
+        printf("Antenas ( id | posicao | H (m) | theta (graus) | distancia (m) )\n");
+        fscanf(arq, "%d %lf %lf %lf %lf", &id, &xi, &yi, &hi, &thetai);
+        printf(" %d | ( %.2f, %.2f ) | %.2f | %.2f | %.2f\n", id, xi, yi, hi, thetai, hi*cosseno(thetai, 5));
+        div = hi*cosseno(thetai, 5); /*guarda distancia*/
+        fscanf(arq, "%d %lf %lf %lf %lf", &id, &xj, &yj, &hj, &thetaj);
+        printf(" %d | ( %.2f, %.2f ) | %.2f | %.2f | %.2f\n", id, xj, yj, hj, thetaj, hj*cosseno(thetaj, 5));
+        djv = hj*cosseno(thetaj, 5); /*guarda distancia*/
+        fscanf(arq, "%d %lf %lf %lf %lf", &id, &xk, &yk, &hk, &thetak);
+        printf(" %d | ( %.2f, %.2f ) | %.2f | %.2f | %.2f\n\n", id, xk, yk, hk, thetak, hk*cosseno(thetak, 5));
+        dkv = hk*cosseno(thetak, 5); /*guarda distancia*/
+
+        n = localiza(xi, yi, div, xj, yj, djv, xk, yk, dkv, &xv, &yv);
+        if (n != 0){
+            printf("Localizacao previa: ( %.2f, %.2f)\n\n", xv, yv);
+        }else{
+            printf("Localizacao previa indefinida\n\n");
+        }
+
+
+        x1 = xv; /*guarda a posicao inicial do veiculo em relacao ao eixo x*/
+        y1 = yv; /*guarda a posicao inicial do veiculo em relacao ao eixo y*/
+
+        /*parada do processo quando nao eh possivel determinar a localizacao do veiculo*/
+        if (n == 0){
+            fscanf(arq, "%lf", &deltaT);
+            fscanf(arq, "%d %lf %lf %lf %lf", &id, &xi, &yi, &hi, &thetai);
+            fscanf(arq, "%d %lf %lf %lf %lf", &id, &xj, &yj, &hj, &thetaj);
+            fscanf(arq, "%d %lf %lf %lf %lf", &id, &xk, &yk, &hk, &thetak);
+
+        }else{
+           fscanf(arq, "%lf", &deltaT);
+        printf("Intervalo de tempo: %.2f segundos\n\n", deltaT);
+
+        /*segunda antena*/
+        printf("Antenas ( id | posicao | H (m) | theta (graus) | distancia (m) )\n");
+        fscanf(arq, "%d %lf %lf %lf %lf", &id, &xi, &yi, &hi, &thetai);
+        printf(" %d | ( %.2f, %.2f ) | %.2f | %.2f | %.2f\n", id, xi, yi, hi, thetai, hi*cosseno(thetai, 5));
+        div = hi*cosseno(thetai, 5); /*guarda distancia*/
+        fscanf(arq, "%d %lf %lf %lf %lf", &id, &xj, &yj, &hj, &thetaj);
+        printf(" %d | ( %.2f, %.2f ) | %.2f | %.2f | %.2f\n", id, xj, yj, hj, thetaj, hj*cosseno(thetaj, 5));
+        djv = hj*cosseno(thetaj, 5); /*guarda distancia*/
+        fscanf(arq, "%d %lf %lf %lf %lf", &id, &xk, &yk, &hk, &thetak);
+        printf(" %d | ( %.2f, %.2f ) | %.2f | %.2f | %.2f\n\n", id, xk, yk, hk, thetak, hk*cosseno(thetak, 5));
+        dkv = hk*cosseno(thetak, 5); /*guarda distancia*/
+
+        n = localiza(xi, yi, div, xj, yj, djv, xk, yk, dkv, &xv, &yv);
+        if ( n != 0){
+            printf("Localizacao atual: ( %.2f, %.2f)\n\n", xv, yv);
+        }else{
+            printf("Localizacao atual indefinida\n\n");
+        }
+
+
+        x2 = xv; /*guarda a posicao final do veiculo em relacao ao eixo x*/
+        y2 = yv; /*guarda a posicao final do veiculo em relacao ao eixo y*/
+
+        /*dados do veiculo*/
+
+            printf("Distancia percorrida: %.2f m\n", raiz( (x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1), EPS ) );
+
+            printf("Velocidade: %.2f m/s \n\n", velocidade( x1, y1, x2, y2, deltaT) );
+
+
+        /*alarme*/
+        if (raiz( (xv)*(xv) + (yv)*(yv), EPS ) < 2000 && n != 0){
+            printf("Distancia da Origem: %.2f\n", raiz( (xv)*(xv) + (yv)*(yv), EPS ));
+            printf("VEICULO ENCONTRA-SE DENTRO DA ZONA DE ALERTA!\n\n");
+        }
+        if (raiz( (xv)*(xv) + (yv)*(yv), EPS ) < 200 && n != 0){
+            printf("Distancia da Origem: %.2f\n", raiz( (xv)*(xv) + (yv)*(yv), EPS ));
+            printf("ALERTA!! VEICULO ENCONTRA-SE DENTRO DO QG!\n\n");
+        }
+        /*interseccao*/
+        sec = intercepta(x1, y1, x2, y2, &x, &y);
+        if(intercepta(x1, y1, x2, y2, &x, &y)){
+            printf("O veiculo INTERCEPTA o QG no ponto ( %.2f, %.2f )\n", x, y);
+            printf("Tempo de interseccao: %.2f s\n\n", (raiz((x - x2)*(x - x2) + (y - y2)*(y - y2), EPS ))/(velocidade( x1, y1, x2, y2, deltaT) ));
+        }else if ( velocidade( x1, y1, x2, y2, deltaT) != 0){
+            printf("trajetoria nao intercepta o QG\n\n");
+        }else{
+            printf("O veiculo encontra-se parado");
+        }
+
+        }
+
+
+
+
+    }
+}
+
+double cosseno(double theta, double epsilon)
+{
+    int i, f;
+    double cos, termo, rad;
+    cos = 1;
+    rad = (theta*3.1415)/180;
+    termo = 1;
+    f = 0;
+    for(i = 1; i != epsilon; i++){
+        termo *= -1*rad*rad/((f+1)*(f+2));
+        cos += termo;
+        f +=2;
+    }
+
+    return cos;
+
+}
+
+int localiza (double xi, double yi, double div, double xj, double yj, double djv, double xk, double yk, double dkv, double *pxv, double *pyv)
+{
+    double pij, pik, qij, qik;
+    pij = (xi*xi -xj*xj + yi*yi - yj*yj - div*div + djv*djv)/(2*(xi-xj));
+    qij = (yj - yi)/(xi - xj);
+    pik = (xi*xi -xk*xk + yi*yi - yk*yk - div*div + dkv*dkv)/(2*(xi-xk));
+    qik = (yk - yi)/(xi - xk);
+
+
+    if (xi == xj || xi ==xk || qij == qik){
+        *pyv = 0;
+        *pxv = 0;
+        return 0;
+    }else{
+        *pyv = (pik - pij)/(qij - qik);
+        *pxv = pij + qij*(*pyv);
+        return 1;
+    }
+}
+
+double raiz (double x, double epsilon)
+{
+    double r0, r1;
+    r0 = x;
+    r1 = (r0 + x/r0)/2;
+    if ( r0 != 0){
+        while ( r0 - r1 >= epsilon){
+        r0 = r1;
+        r1 = (r1 + x/r1)/2;
+        }
+    return r1;
+    }else{
+        return 0;
+    }
+
+
+}
+
+double velocidade(double x0, double y0, double x1, double y1, double deltaT)
+{
+    double v;
+    v = (raiz((x1 - x0)*(x1 - x0) + (y1 - y0)*(y1 - y0), EPS) )/deltaT;
+    return v;
+}
+
+int intercepta(double x0, double y0, double x1, double y1, double *x, double *y)
+{
+    double m, a, b, c, aeq, beq, ceq, delta, g;
+    if ( x0 == x1 && x0<= 200 && x0>= -200 && y0 != y1){
+            *x = x0;
+            g = *x;
+            *y = raiz( 200*200 - (g*g), EPS);
+            return 1;
+    }else if (y0 == y1 && y0 >= -200 && y0 <= 200 && x0 != x1 ){
+        *y = y0;
+        g = *y;
+        *x = raiz( 200*200 - (g*g), EPS);
+        return 1;
+    }
+    else if (x0 != x1 && y0 != y1){
+
+        m = (y1 - y0)/(x1 - x0);
+
+        a = m;
+        b = -1;
+        c = y1 - (m*x1);
+
+        aeq = 1 + (a*a)/(b*b);
+        beq = (2*a*c)/(b*b);
+        ceq = (c*c)/(b*b) - (200*200);
+        delta = (beq*beq) - (4*aeq*ceq);
+
+        if ( delta >= 0){
+
+            *x = ((raiz(delta, EPS)- beq))/(2*aeq);
+            g = *x;
+            *y = raiz( 200*200 - (g*g), EPS);
+
+            *x = (-beq -(raiz(delta, EPS)))/(2*aeq);
+            g = *x;
+            *y = raiz( 200*200 - (g*g), EPS);
+            return 1;
+        }else {
+            return 0;
+        }
+
+    }else{
+        return 0;
+    }
+}
+
