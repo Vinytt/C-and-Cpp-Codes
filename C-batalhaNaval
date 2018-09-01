@@ -1,0 +1,442 @@
+#include<stdio.h>
+#include<stdlib.h>
+
+#define MAXLINHAS 20
+#define MAXCOLUNAS 20
+#define MAXNOME 64
+#define TRUE 1
+#define FALSE 1
+
+
+/*IMPORTANTE!!!!! NO MEU COMPUTADOR, O EXECUTAVEL RECONHECIA O ARQUIVO DO MAPA OU O ARQUIVO SECRETO APENAS QUANDO ERAM ESCRITOS
+NO SEGUINTE FORMATO: mapa.dat.txt ou secreto.dat.txt
+FAVOR CONSIDERAR ISSO NA CORRECAO!!!*/
+
+
+void inicializa_gerador(int semente);
+int no_aleatorio(int n);
+void sorteie_posicao (int no_linhas, int no_colunas, int *linha, int *coluna);
+void leia_ate_barra_n (FILE *arq);
+void leia_mapa (int *no_linhas, int *no_colunas,char mapa[MAXLINHAS][MAXCOLUNAS], int *c_barco);
+void escreva_mapa_arquivo (int no_linhas, int no_colunas, char mapa[MAXLINHAS][MAXCOLUNAS]);
+void escreva_mapa_tela (int no_linhas, int no_colunas, char mapa[MAXLINHAS][MAXCOLUNAS]);
+int coluna_inicial_barco(char mapa[MAXLINHAS][MAXCOLUNAS]);
+void afunda_embarcacao(int linha, int coluna, char mapa[MAXLINHAS][MAXCOLUNAS]);
+
+
+/*funcoes do movimento do barquin*/
+char para_cima (char p_barquin[MAXLINHAS][MAXCOLUNAS]);
+char para_baixo (char p_barquin[MAXLINHAS][MAXCOLUNAS]);
+char para_dir (char p_barquin[MAXLINHAS][MAXCOLUNAS]);
+char para_esq (char p_barquin[MAXLINHAS][MAXCOLUNAS]);
+
+int main ()
+{
+    int no_linhas, no_colunas, c_barco, i, j, k, parado, moveu, tiros, isorteado, jsorteado;
+    parado = 0;
+    /*sendo i o indice de linhas e j o indice de colunas*/ /*k eh o contador de rodadas*/ /*parado conta quantas rodadas o barquin nao conseguiu se mover*/
+
+    char mapa[MAXLINHAS][MAXCOLUNAS], tecla; /*tecla a ser pressionada para movimentar o barquin*/
+
+    leia_mapa (&no_linhas, &no_colunas, mapa, &c_barco);      /*chama funcao de ler o mapa*/
+
+    /*moldura da matriz: linha e coluna de numero 0; linha e coluna de numero no_linhas+2 e no no_colunas+2 respectivamente*/
+    for (i = 0; i<=no_linhas + 2; i++){
+        mapa[i][0] = 'A';
+        mapa[i][no_colunas + 2] = 'A'; /*OBS: eu queria usar um #define MOLDURA A, mas por algum motivo nao deu certo nao*/
+    }
+    for (j = 0; j<=no_colunas + 2; j++){
+        mapa[0][j] = 'A';
+        mapa[no_linhas + 2][j] = 'A'; /*OBS': moldura eh A de agua*/
+    }
+
+
+    mapa[1][c_barco] = 'B'; /*da o caractere B para a posicao que foi definida para o barquin*/
+
+    escreva_mapa_arquivo(no_linhas, no_colunas, mapa); /*escreve o mapa no arquivo secreto*/
+
+    escreva_mapa_tela(no_linhas, no_colunas, mapa);/*escreve o mapa na tela*/
+
+    /*movimentacao do barquin*/
+
+    for(k = 1; 1>0; k++){ /*laco infinito*/
+        printf("MSG do QG: selecione movimento, marujo! ('e'=esquerda, 'b'=baixo, 'd'=direita, 'c'=cima)\n");
+
+        if(k == 1){
+            i = 1;
+            j = c_barco;
+        }
+        scanf(" %c", &tecla); /*le a tecla que o jogador aperta*/
+
+
+        if(tecla == 'c' && mapa[i-1][j] != 'A' && mapa[i-1][j] != 'S' && mapa[i-1][j] != 'D' && mapa[i-1][j] != 'C' && mapa[i-1][j] != 'P' && mapa[i-1][j] != 'H'){
+            mapa[i][j] = '.';
+            i--;
+            mapa[i][j] = 'B';
+            printf("MSG do QG: moveu-se para a posicao (%d, %d)! As vezes recuar e' a melhor estrategia!\n", i, j);
+            parado = 0;
+        }else if (tecla == 'b' && mapa[i+1][j] != 'A' && mapa[i+1][j] != 'S' && mapa[i+1][j] != 'D' && mapa[i+1][j] != 'C' && mapa[i+1][j] != 'P' && mapa[i+1][j] != 'H'){
+            mapa[i][j] = '.';
+            i++;
+            mapa[i][j] = 'B';
+            printf("MSG do QG: moveu-se para a posicao (%d, %d)! Avante, marujo!\n", i, j);
+            parado = 0;
+        }else if (tecla == 'd' && mapa[i][j+1] != 'A' && mapa[i][j+1] != 'S' && mapa[i][j+1] != 'D' && mapa[i][j+1] != 'C' && mapa[i][j+1] != 'P' && mapa[i][j+1] != 'H'){
+            mapa[i][j] = '.';
+            j++;
+            mapa[i][j] = 'B';
+            printf("MSG do QG: moveu-se para a posicao (%d, %d)! Contorne seus problemas!\n", i, j);
+            parado = 0;
+        }else if (tecla == 'e' && mapa[i][j-1] != 'A' && mapa[i][j-1] != 'S' && mapa[i][j-1] != 'D' && mapa[i][j-1] != 'C' && mapa[i][j-1] != 'P' && mapa[i][j-1] != 'H'){
+            mapa[i][j] = '.';
+            j--;
+            mapa[i][j] = 'B';
+            printf("MSG do QG: moveu-se para a posicao (%d, %d)! Viva a esquerda! *toca o glorioso hino da URSS*\n", i, j);
+            parado = 0;
+        }else if (tecla == 'f'){
+            return 0;
+
+        }else{
+            printf("MSG do QG: movimento impossivel!\n ficou parado em (%d, %d)! Pense melhor, marinheiro!\n", i, j);
+            parado ++;
+        }
+
+        if(parado == 3){
+            printf("Vc ficou parado 3 rodadas! Marujos preguicosos vao ao mar!\n FIM DE JOGO\n");
+            return 0;
+        }
+
+        /*tiros*/
+        for (tiros = 1; tiros <= 3; tiros++){
+            sorteie_posicao(no_linhas, no_colunas, &isorteado, &jsorteado);
+            printf("MSG do QG: Tiro na posicao (%d, %d)\n", isorteado, jsorteado);
+            if (mapa[isorteado][jsorteado] == 'B'){
+                printf("Sua embarcacao foi atingida!\n FIM DE JOGO");
+                return 0;
+            }
+            if (mapa[isorteado][jsorteado] == 'S' || mapa[isorteado][jsorteado] == 'D' || mapa[isorteado][jsorteado] == 'C' || mapa[isorteado][jsorteado] == 'P' || mapa[isorteado][jsorteado] == 'H'){
+                afunda_embarcacao(isorteado, jsorteado, mapa);
+                printf("Embarcacao inimiga atingida! Muito bem marujos!\n");
+            }
+            if (mapa[isorteado][jsorteado] == ' '){
+                mapa[isorteado][jsorteado] = 'a';
+                printf("Nao acertamos nada alem de agua...\n");
+            }
+        }
+
+        printf("MSG do QG: segue o mapa:\n\n");
+        escreva_mapa_arquivo(no_linhas, no_colunas, mapa);
+        escreva_mapa_tela(no_linhas, no_colunas, mapa);
+
+        if(i == no_linhas + 1){
+            printf("Parabens, vc ganhou! Muito bem, meu consagrado!");
+            return 0;
+        }
+    }
+    return 0;
+
+}
+
+
+void inicializa_gerador(int semente)
+{
+  srand(semente);
+}
+
+int no_aleatorio(int n)
+{
+  return  1 + (rand()/(RAND_MAX+1.0))*n;
+}
+
+void sorteie_posicao (int no_linhas, int no_colunas, int *linha, int *coluna)
+{
+  *linha  = no_aleatorio(no_linhas);
+  *coluna = no_aleatorio(no_colunas);
+}
+
+void leia_ate_barra_n (FILE *arq)
+{
+  char ch; /* usado na leitura dos caracteres */
+
+  /* le os caracteres ate' encontrar o fim-de-linha */
+  fscanf(arq, "%c", &ch);
+  while (ch != '\n')
+    {
+      fscanf(arq, "%c", &ch);
+    }
+}
+
+void leia_mapa (int *no_linhas, int *no_colunas,char mapa[MAXLINHAS][MAXCOLUNAS], int *c_barco)
+{
+  FILE *arq;   /* arquivo que contem o mapa */
+  char nome_arquivo[MAXNOME]; /* nome do arquivo que contem o mapa */
+  int no_l;    /* numero de linha do mapa */
+  int no_c;    /* numero de colunas do mapa */
+  int c_bar;   /* coluna inicial do barco */
+  int i;       /* indice de linhas */
+  int j;       /* indice de colunas */
+  int codigo;  /* semente do gerador de numeros aleatorios */
+
+  printf("MSG do QG: "
+         "preparando para leitura do mapa.\n");
+
+
+  /* 1. leia o nome do arquivo */
+  printf("MSG do QG: "
+         "forneca nome do arquivo que contem o mapa: ");
+  scanf("%s", nome_arquivo);
+
+  /* 2. abra o arquivo para leitura */
+  arq = fopen(nome_arquivo,"r");
+  if (arq == NULL)
+    {
+      printf("MSG do QG: "
+             "erro na abertura do arquivo %s.\n", nome_arquivo);
+      printf("MSG do QG: "
+             "MISSAO ABORTADA!\n\n");
+      system("pause"); /* para WINDOWS */
+      exit(-1);
+    }
+  printf("MSG do QG: "
+         "arquivo %s foi encontrado.\n", nome_arquivo);
+
+  /* 3. leia o numero de linha n e o numero de coluna m do mapa */
+  printf("MSG do QG: "
+         "mapa esta sendo lido do arquivo %s.\n", nome_arquivo);
+  fscanf(arq, "%d %d %d", &no_l, &no_c, &codigo);
+  leia_ate_barra_n(arq);
+  printf("MSG do QG: "
+         "mapa tem %d linhas e %d colunas.\n", no_l, no_c);
+  printf("MSG do QG: "
+         "codigo de ataque: %d\n", codigo);
+
+
+   /* 4. inicializa o gerador de numeros aleatorios */
+  inicializa_gerador(codigo);
+
+
+  /* 5. leia o mapa */
+  for (i = 1; i <= no_l; i++)
+    {
+      for (j = 1; j <= no_c; j++)
+        {
+          fscanf(arq, "%c", &mapa[i][j]);
+          if (mapa[i][j] == 'B'){ /* definindo a coluna em que esta o barco*/
+            c_bar = j;
+          }
+        }
+      leia_ate_barra_n(arq); /* le os caracteres ate' o fim-de-linha*/
+    }
+
+
+  /* 6. determine a posicao inicial do barco */ /*decidi nao usar essa linha no codigo. A posicao do barco foi definida na parte 5 dessa mesma funcao*/
+ /* c_bar = coluna_inicial_barco(mapa);*/
+   /* voce precisa escrever a funcao acima */
+
+  printf("MSG do QG: "
+         "posicao inicial do barco e' (1,%d).\n", c_bar);
+
+
+  /* 7. feche o arquivo */
+  fclose(arq);
+  printf("MSG do QG: "
+         "mapa lido com sucesso.\n");
+
+ /* 8. devolva o numero de linhas, colunas e coluna do barco */
+  *no_linhas  = no_l;
+  *no_colunas = no_c;
+  *c_barco    = c_bar;
+}
+
+void escreva_mapa_arquivo (int no_linhas, int no_colunas, char mapa[MAXLINHAS][MAXCOLUNAS])
+{
+  FILE *arq;
+  int i; /* indice de linhas */
+  int j; /* indice de colunas */
+
+  /* abra arquivo para escrita */
+  arq = fopen("secreto.dat.txt","w");
+  if (arq == NULL)
+    {
+      printf("MSG do QG: "
+             "erro na criacao do arquivo secreto.dat.\n");
+      printf("MSG do QG: "
+             "MISSAO ABORTADA!\n\n");
+      exit(-1);
+    }
+
+  /* escreva o cabecalho no arquivo */
+  fprintf(arq, "    MAPA SECRETO DA BATALHA\n\n");
+  fprintf(arq, "    no. linhas = %d     no. colunas = %d\n\n",
+          no_linhas,  no_colunas);
+
+  /* imprime o mapa no arquivo secreto.dat */
+    fprintf(arq, " ");
+    for (j = 1; j<=no_colunas + 1; j++){
+    if (j != no_colunas + 1){
+        fprintf(arq, "  %d ", j);
+    }else{
+        fprintf(arq, "  %d  ", j);
+    }
+  }
+  fprintf(arq, "\n");
+
+  for (i = 1; i<=no_linhas + 1; i++){
+    fprintf(arq, " ");
+    for (j = 1; j<=no_colunas +1; j++){
+        if (j != no_colunas +1){
+            fprintf(arq, "+---");
+        }else{
+            fprintf(arq, "+---+");
+        }
+    }
+    fprintf(arq, "\n");
+    fprintf(arq, "%d", i);
+    for (j = 1; j<=no_colunas + 1; j++){
+            if( j != no_colunas + 1){
+               fprintf(arq, "| %c ", mapa[i][j]);
+            }else{
+               fprintf(arq, "| %c |", mapa[i][j]);
+            }
+            /*fprintf(arq, "\n");*/
+        }
+        fprintf(arq, "\n");
+    }
+    /*fprintf(arq, "\n");*/
+
+  fprintf(arq, " ");
+  for (j = 1; j<=no_colunas +1; j++){
+    if (j != no_colunas +1){
+        fprintf(arq, "+---");
+    }else{
+        fprintf(arq, "+---+");
+    }
+  }
+  fprintf(arq, "\n");
+
+
+  /* feche o arquivo */
+  fprintf(arq, "\n\nFIM DO ARQUIVO.");
+  fclose(arq);
+}
+
+
+void escreva_mapa_tela(int no_linhas, int no_colunas, char mapa[MAXLINHAS][MAXCOLUNAS])
+
+{
+    int i;
+    int j;
+
+    printf(" ");
+    for (j = 1; j<=no_colunas + 1; j++){
+    if (j != no_colunas + 1){
+        printf("  %d ", j);
+    }else{
+        printf("  %d  ", j);
+    }
+  }
+  printf("\n");
+
+  for (i = 1; i<=no_linhas + 1; i++){
+    printf(" ");
+    for (j = 1; j<=no_colunas +1; j++){
+        if (j != no_colunas +1){
+            printf("+---");
+        }else{
+            printf("+---+");
+        }
+    }
+    printf("\n");
+    printf("%d", i);
+    for (j = 1; j<=no_colunas + 1; j++){
+        if (mapa[i][j] == 'B' || mapa[i][j] == '.' || mapa[i][j] == '*' || mapa[i][j] == 's' || mapa[i][j] == 'd' || mapa[i][j] == 'c' || mapa[i][j] == 'p' || mapa[i][j] == 'h' || mapa[i][j] == 'a'){ /*if pra garantir que apenas mostrara a posicao do barquin e das embarcacoes afundadas*/
+            printf("| %c ", mapa[i][j]);
+        }else{
+            printf("|   ");
+        }
+    }
+    printf("|");
+    printf("\n");
+  }
+  printf(" ");
+  for (j = 1; j<=no_colunas +1; j++){
+    if (j != no_colunas +1){
+        printf("+---");
+    }else{
+        printf("+---+");
+    }
+  }
+  printf("\n");
+}
+
+/*int coluna_inicial_barco(char mapa[MAXLINHAS][MAXCOLUNAS]){
+    FILE *arq;
+    arq
+}*/
+
+void afunda_embarcacao(int linha, int coluna, char mapa[MAXLINHAS][MAXCOLUNAS])
+{
+    int i, j, k; /*contador que percorre os navios a serem afundados*/
+    i = linha;
+    j = coluna;
+
+    if (mapa[i][j] == 'S'){ /*submarino*/
+        mapa[i][j] = '*';
+    }
+
+    else if (mapa[i][j] == 'D'){ /*destryer*/
+        mapa[i][j] = '*';
+        for (k = -1; k < 2; k++){
+            if (mapa[i + k][j] == 'D'){
+                mapa[i + k][j] = 'd';
+            } if (mapa[i][j + k] == 'D'){
+                mapa[i][j + k] = 'd';
+            } if (mapa[i + k][j + k] == 'D'){
+                mapa[i + k][j + k] = 'd';
+            } if (mapa[i - k][j + k] == 'D'){
+                mapa[i - k][j + k] = 'd';
+            }
+        }
+    }
+
+    else if (mapa[i][j] == 'C'){ /*crusader*/
+        mapa[i][j] = '*';
+        for (k = -3; k < 4; k++){
+            if (mapa[i + k][j] == 'C'){
+                mapa[i + k][j] = 'c';
+            } if (mapa[i][j + k] == 'C'){
+                mapa[i][j + k] = 'c';
+            } if (mapa[i + k][j + k] == 'C'){
+                mapa[i + k][j + k] = 'c';
+            } if (mapa[i - k][j + k] == 'C'){
+                mapa[i - k][j + k] = 'c';
+            }
+        }
+    }
+
+    else if (mapa[i][j] == 'P'){ /*porta avioes*/
+        mapa[i][j] = '*';
+        for (k = -4; k < 5; k++){
+            if (mapa[i + k][j] == 'P'){
+                mapa[i + k][j] = 'p';
+            } if (mapa[i][j + k] == 'P'){
+                mapa[i][j + k] = 'p';
+            } if (mapa[i + k][j + k] == 'P'){
+                mapa[i + k][j + k] = 'p';
+            } if (mapa[i - k][j + k] == 'P'){
+                mapa[i - k][j + k] = 'p';
+            }
+        }
+    }
+
+    else if (mapa[i][j] == 'H'){
+        mapa[i][j] = '*';
+        for (k = -1; k < 2; k++){
+            if (mapa[i + k][j + k] == 'H'){
+                mapa[i + k][j + k] = 'h';
+            } if (mapa[i - k][j + k] == 'H'){
+                mapa[i - k][j + k] = 'h';
+            }
+        }
+    }
+}
