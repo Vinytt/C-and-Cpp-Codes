@@ -1,2 +1,2 @@
 # C-and-Cpp-Codes
-What've done so far with C and C++
+O que eu fui capaz de implementar até agora usando C e C++
